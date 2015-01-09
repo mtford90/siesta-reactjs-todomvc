@@ -1,0 +1,28 @@
+{
+  "name": "siesta",
+  "version": "0.1.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "async": "~0.9.0",
+    "jquery": "~2.1.1",
+    "underscore": "~1.6.0",
+    "observe-js": "~0.4.0"
+  },
+  "main": "dist/siesta.js",
+  "ignore": [
+    "CONTRIBUTING.md",
+    "README.md",
+    "Gruntfile.js",
+    "build.config.js",
+    "LICENSE",
+    "karma",
+    "test",
+    "_site",
+    "docs",
+    "siesta.sublime-project",
+    "siesta.sublime-workspace",
+    "vendor",
+    "package.json"
+  ]
+}

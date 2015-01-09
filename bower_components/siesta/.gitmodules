@@ -1,0 +1,17 @@
+[submodule "vendor/operations.js"]
+	path = vendor/operations.js
+	url = https://github.com/mtford90/operations.js.git
+        branch = no-underscore
+[submodule "vendor/jquery.custom.js"]
+	path = vendor/jquery.custom.js
+	url = https://github.com/mtford90/jquery.custom.js
+[submodule "vendor/observe-js"]
+	path = vendor/observe-js
+	url = https://github.com/mtford90/observe-js
+[submodule "_site"]
+	path = _site
+	url = https://github.com/mtford90/siesta.git 
+	branch = gh-pages
+[submodule "react-siesta"]
+	path = react-siesta
+	url = git@github.com:mtford90/react-siesta.git

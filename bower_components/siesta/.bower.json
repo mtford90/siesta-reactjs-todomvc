@@ -1,0 +1,38 @@
+{
+  "name": "siesta",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "async": "~0.9.0",
+    "jquery": "~2.1.1",
+    "underscore": "~1.6.0",
+    "observe-js": "~0.4.0"
+  },
+  "main": "dist/siesta.js",
+  "ignore": [
+    "CONTRIBUTING.md",
+    "README.md",
+    "Gruntfile.js",
+    "build.config.js",
+    "LICENSE",
+    "karma",
+    "test",
+    "_site",
+    "docs",
+    "siesta.sublime-project",
+    "siesta.sublime-workspace",
+    "vendor",
+    "package.json"
+  ],
+  "homepage": "https://github.com/mtford90/siesta",
+  "_release": "0.1.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.1.0",
+    "commit": "607e70ec60e77757a3470e84cfc4b5e9892c4c9b"
+  },
+  "_source": "git://github.com/mtford90/siesta.git",
+  "_target": "~0.1.0",
+  "_originalSource": "siesta",
+  "_direct": true
+}
