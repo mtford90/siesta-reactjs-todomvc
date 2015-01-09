@@ -67,9 +67,9 @@ var app = app || {},
                 active: app.Todo.reactiveQuery({completed: false})
             });
 
-            this.all.orderBy('index');
-            this.completed.orderBy('index');
-            this.active.orderBy('index');
+            this.all.orderBy('-index');
+            this.completed.orderBy('-index');
+            this.active.orderBy('-index');
             this.all.init().then(handler.call(this, 'all'));
             this.all.listen(handler.call(this, 'all'));
             this.completed.init().then(handler.call(this, 'completed'));
@@ -89,10 +89,7 @@ var app = app || {},
             var title = this.refs.newField.getDOMNode().value.trim();
 
             if (title) {
-                app.Todo.map({title: title, completed: false})
-                    .then(function (todo) {
-                        console.log('new todo', todo);
-                    });
+                app.Todo.map({title: title, completed: false, index: this.state.all.length});
                 this.refs.newField.getDOMNode().value = '';
             }
         },
@@ -102,9 +99,6 @@ var app = app || {},
             app.Todo.toggleAll(checked);
         },
 
-        destroy: function (todo) {
-            this.props.model.destroy(todo);
-        },
 
         edit: function (todo, callback) {
             // refer to todoItem.js `handleEdit` for the reasoning behind the
@@ -115,7 +109,7 @@ var app = app || {},
         },
 
         save: function (todoToSave, text) {
-            this.props.model.save(todoToSave, text);
+            todoToSave.title = text;
             this.setState({editing: null});
         },
 
@@ -124,7 +118,10 @@ var app = app || {},
         },
 
         clearCompleted: function () {
-            this.props.model.clearCompleted();
+            // TODO: Queryset.remove()
+            _.extend([], this.state.completed).forEach(function (t) {
+                t.remove();
+            });
         },
 
         render: function () {
@@ -135,7 +132,6 @@ var app = app || {},
                     <TodoItem
                         key={todo._id}
                         todo={todo}
-                        onDestroy={this.destroy.bind(this, todo)}
                         onEdit={this.edit.bind(this, todo)}
                         editing={this.state.editing === todo._id}
                         onSave={this.save.bind(this, todo)}

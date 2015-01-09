@@ -9,6 +9,7 @@ var app = app || {};
 
     var Utils = app.Utils;
 
+    siesta.autosave = true;
     app.Todo = siesta.collection('TodoMVC')
         .model('Todo', {
             attributes: [

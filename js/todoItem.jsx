@@ -67,6 +67,11 @@ var app = app || {};
             todo.completed = !todo.completed;
         },
 
+        onDestroy: function () {
+            var todo = this.props.todo;
+            todo.remove();
+        },
+
         render: function () {
             console.log('rendering todo');
             return (
@@ -84,7 +89,7 @@ var app = app || {};
                         <label onDoubleClick={this.handleEdit}>
 							{this.props.todo.title}
                         </label>
-                        <button className="destroy" onClick={this.props.onDestroy} />
+                        <button className="destroy" onClick={this.onDestroy} />
                     </div>
                     <input
                         ref="editField"
