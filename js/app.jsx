@@ -3,7 +3,9 @@
 /*jshint trailing:false */
 /*jshint newcap:false */
 /*global React, Router*/
-var app = app || {};
+var app = app || {},
+    utils = app.Utils;
+
 
 (function () {
     'use strict';
@@ -47,21 +49,33 @@ var app = app || {};
             });
             router.init('/');
             // TODO: Get rid of query & execute + use new mixin feature for listening + updating state
-
             var handler = function (prop) {
                 return function () {
                     var stateChange = {};
-                    stateChange[prop] = app[prop].results;
-                    this.setState(stateChange);
+                    stateChange[prop] = this[prop].results;
+                    this.setState(stateChange, function () {
+                        console.log('state', this.state);
+                    });
                 }.bind(this)
             };
 
-            app.all.init().then(handler.call(this, 'all'));
-            app.all.listen(handler.call(this, 'all'));
-            app.completed.init().then(handler.call(this, 'completed'));
-            app.completed.listen(handler.call(this, 'completed'));
-            app.active.init().then(handler.call(this, 'active'));
-            app.active.listen(handler.call(this, 'active'));
+            // TODO: pass orderBy to opts
+
+            _.extend(this, {
+                all: app.Todo.reactiveQuery(),
+                completed: app.Todo.reactiveQuery({completed: true}),
+                active: app.Todo.reactiveQuery({completed: false})
+            });
+
+            this.all.orderBy('index');
+            this.completed.orderBy('index');
+            this.active.orderBy('index');
+            this.all.init().then(handler.call(this, 'all'));
+            this.all.listen(handler.call(this, 'all'));
+            this.completed.init().then(handler.call(this, 'completed'));
+            this.completed.listen(handler.call(this, 'completed'));
+            this.active.init().then(handler.call(this, 'active'));
+            this.active.listen(handler.call(this, 'active'));
 
         },
 
@@ -75,17 +89,17 @@ var app = app || {};
             var title = this.refs.newField.getDOMNode().value.trim();
 
             if (title) {
-                app.Todo.map({title: title});
+                app.Todo.map({title: title, completed: false})
+                    .then(function (todo) {
+                        console.log('new todo', todo);
+                    });
+                this.refs.newField.getDOMNode().value = '';
             }
         },
 
-        toggleAll: function (event) {
-            var checked = event.target.checked;
-            this.props.model.toggleAll(checked);
-        },
-
-        toggle: function (todoToToggle) {
-            this.props.model.toggle(todoToToggle);
+        toggleAll: function (e) {
+            var checked = e.target.checked;
+            app.Todo.toggleAll(checked);
         },
 
         destroy: function (todo) {
@@ -121,7 +135,6 @@ var app = app || {};
                     <TodoItem
                         key={todo._id}
                         todo={todo}
-                        onToggle={this.toggle.bind(this, todo)}
                         onDestroy={this.destroy.bind(this, todo)}
                         onEdit={this.edit.bind(this, todo)}
                         editing={this.state.editing === todo._id}
@@ -133,6 +146,9 @@ var app = app || {};
 
             var activeTodoCount = this.state.active.length,
                 completedCount = this.state.completed.length;
+
+            console.log('activeTodoCount', activeTodoCount);
+            console.log('completedCount', completedCount);
 
             if (activeTodoCount || completedCount) {
                 footer =

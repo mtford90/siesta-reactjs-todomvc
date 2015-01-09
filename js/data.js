@@ -18,15 +18,19 @@ var app = app || {};
                     name: 'completed',
                     default: false
                 }
-            ]
+            ],
+            statics: {
+                toggleAll: function (checked) {
+                    // TODO: Get rid of execute
+                    this.all().execute().then(function (ts) {
+                         ts.forEach(function (t) {
+                             t.completed = checked;
+                         })
+                    });
+                }
+            }
         });
 
-    // TODO: pass orderBy to opts
-    app.all = app.Todo.reactiveQuery();
-    app.all.orderBy('index');
-    app.completed = app.Todo.reactiveQuery({completed: true});
-    app.completed.orderBy('index');
-    app.active = app.Todo.reactiveQuery({completed: false});
-    app.active.orderBy('index');
+
 
 })();
