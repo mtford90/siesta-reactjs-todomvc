@@ -6,6 +6,7 @@ var RelationshipProxy = require('./RelationshipProxy'),
     Store = require('./store'),
     util = require('./util'),
     InternalSiestaError = require('./error').InternalSiestaError,
+    ModelEventType = require('./modelEvents').ModelEventType,
     SiestaModel = require('./modelInstance');
 
 /**
@@ -35,22 +36,23 @@ _.extend(OneToOneProxy.prototype, {
         return null;
     },
     set: function (obj, opts) {
+        console.log('related', this.object, this.related);
+        console.log('set', this.object, obj);
         this.checkInstalled();
-        var self = this;
         if (obj) {
             var errorMessage;
-            if (errorMessage = self.validate(obj)) {
+            if (errorMessage = this.validate(obj)) {
                 return errorMessage;
             }
             else {
                 this.clearReverseRelated(opts);
-                self.setIdAndRelated(obj, opts);
-                self.setIdAndRelatedReverse(obj, opts);
+                this.setIdAndRelated(obj, opts);
+                this.setIdAndRelatedReverse(obj, opts);
             }
         }
         else {
             this.clearReverseRelated(opts);
-            self.setIdAndRelated(obj, opts);
+            this.setIdAndRelated(obj, opts);
         }
     },
     get: function (callback) {

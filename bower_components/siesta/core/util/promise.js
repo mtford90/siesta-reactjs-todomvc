@@ -3,8 +3,6 @@
  * @module util.promise
  */
 
-var _ = require('underscore');
-
 function s(pass) {
     return function (res) {
         this.res = res;
@@ -14,7 +12,7 @@ function s(pass) {
         catch (err) {
             e.call(this, err);
         }
-    };
+    }
 }
 
 function f(err) {

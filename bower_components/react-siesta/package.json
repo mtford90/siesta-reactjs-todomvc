@@ -1,6 +1,6 @@
 {
   "name": "react-siesta",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "React mixins & support for Siesta",
   "main": "index.jsx",
   "scripts": {
@@ -46,13 +46,9 @@
     "q": "^1.1.2",
     "react": "^0.12.2",
     "serve-static": "^1.8.0",
-    "siesta": "^0.2.9",
-    "siesta-orm": "^0.1.0",
+    "siesta-orm": "^0.1.2",
     "uglify-js": "^2.4.16",
     "uglifyjs": "^2.3.6",
     "underscore": "^1.7.0"
-  },
-  "dependencies": {
-    "connect": "^3.3.4"
   }
 }

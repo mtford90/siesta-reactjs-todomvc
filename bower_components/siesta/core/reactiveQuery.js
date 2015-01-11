@@ -7,12 +7,13 @@
 
 var log = require('./log'),
     Query = require('./query'),
-    _ = require('underscore'),
     EventEmitter = require('events').EventEmitter,
     events = require('./events'),
     modelEvents = require('./modelEvents'),
     InternalSiestaError = require('./error').InternalSiestaError,
-    util = require('./util');
+    constructQuerySet = require('./querySet'),
+    util = require('./util'),
+    _ = util._;
 
 var Logger = log.loggerWithName('Query');
 
@@ -27,14 +28,13 @@ function ReactiveQuery(query) {
 
     _.extend(this, {
         _query: query,
-        results: null,
-        insertionPolicy: ReactiveQuery.InsertionPolicy.Back
+        results: constructQuerySet([], query.model),
+        insertionPolicy: ReactiveQuery.InsertionPolicy.Back,
+        initialised: false
     });
 
-    var initialisedGet = function () {return !!self.results};
     Object.defineProperties(this, {
-        initialised: {get: initialisedGet},
-        initialized: {get: initialisedGet},
+        initialized: {get: function () {return this.initialised}},
         model: {get: function () { return self._query.model }},
         collection: {get: function () { return self.model.collectionName }}
     });
@@ -54,72 +54,51 @@ _.extend(ReactiveQuery.prototype, {
         if (Logger.trace) Logger.trace('init');
         var deferred = util.defer(cb);
         cb = deferred.finish.bind(deferred);
-        this._query.execute(function (err, results) {
-            if (!err) {
-                this.results = results;
-                if (!this.handler) {
-                    var name = this._constructNotificationName();
-                    var handler = function (n) {
-                        this._handleNotif(n);
-                    }.bind(this);
-                    this.handler = handler;
-                    events.on(name, handler);
-                }
-                if (Logger.trace) Logger.trace('Listening to ' + name);
-                cb();
-            }
-            else {
-                cb(err);
-            }
-        }.bind(this));
-        return deferred.promise;
-    },
-    orderBy: function (field, cb) {
-        var deferred = util.defer(cb);
-        cb = deferred.finish.bind(deferred);
-        this._query = this._query.orderBy(field);
-        if (this.initialised) {
+        if (!this.initialised) {
             this._query.execute(function (err, results) {
                 if (!err) {
                     this.results = results;
+                    if (!this.handler) {
+                        var name = this._constructNotificationName();
+                        var handler = function (n) {
+                            this._handleNotif(n);
+                        }.bind(this);
+                        this.handler = handler;
+                        events.on(name, handler);
+                    }
+                    if (Logger.trace) Logger.trace('Listening to ' + name);
+                    this.initialised = true;
+                    cb(null, this.results);
                 }
-                cb(err);
+                else {
+                    cb(err);
+                }
             }.bind(this));
         }
         else {
-            cb();
+            cb(null, this.results);
         }
         return deferred.promise;
     },
-    clearOrdering: function (cb) {
-        this._query.clearOrdering();
-        if (this.initialised) {
-            return this.init(cb);
-        }
-        else {
-            var deferred = util.defer(cb);
-            deferred.resolve();
-            return deferred.promise;
-        }
-    },
     insert: function (newObj) {
+        var results = this.results.mutableCopy();
         if (this.insertionPolicy == ReactiveQuery.InsertionPolicy.Back) {
-            var idx = this.results.push(newObj);
+            var idx = results.push(newObj);
         }
         else {
-            idx = this.results.unshift(newObj);
+            idx = results.unshift(newObj);
         }
+        this.results = results.asModelQuerySet(this.model);
         return idx;
     },
     _handleNotif: function (n) {
         if (Logger.trace) Logger.trace('_handleNotif', n);
-        if (!this.results) throw Error('ReactiveQuery must be initialised before receiving events.');
         if (n.type == modelEvents.ModelEventType.New) {
             var newObj = n.new;
             if (this._query.objectMatchesQuery(newObj)) {
                 if (Logger.trace) Logger.trace('New object matches', newObj._dumpString());
                 var idx = this.insert(newObj);
-                this.emit('change', {
+                this.emit('change', this.results, {
                     index: idx,
                     added: [newObj],
                     type: modelEvents.ModelEventType.Splice,
@@ -147,7 +126,9 @@ _.extend(ReactiveQuery.prototype, {
             }
             else if (!matches && alreadyContains) {
                 if (Logger.trace) Logger.trace('Updated object no longer matches!', newObj._dumpString());
-                var removed = this.results.splice(index, 1);
+                results = this.results.mutableCopy();
+                var removed = results.splice(index, 1);
+                this.results = results.asModelQuerySet(this.model);
                 this.emit('change', this.results, {
                     index: index,
                     obj: this,
@@ -162,15 +143,17 @@ _.extend(ReactiveQuery.prototype, {
             else if (matches && alreadyContains) {
                 if (Logger.trace) Logger.trace('Matches but already contains', newObj._dumpString());
                 // Send the notification over. 
-                this.emit('change', n);
+                this.emit('change', this.results, n);
             }
         }
         else if (n.type == modelEvents.ModelEventType.Remove) {
             newObj = n.obj;
-            index = this.results.indexOf(newObj);
+            var results = this.results.mutableCopy();
+            index = results.indexOf(newObj);
             if (index > -1) {
                 if (Logger.trace) Logger.trace('Removing object', newObj._dumpString());
-                removed = this.results.splice(index, 1);
+                removed = results.splice(index, 1);
+                this.results = constructQuerySet(results, this.model);
                 this.emit('change', this.results, {
                     index: index,
                     obj: this,
@@ -185,13 +168,15 @@ _.extend(ReactiveQuery.prototype, {
         else {
             throw new InternalSiestaError('Unknown change type "' + n.type.toString() + '"')
         }
-        this.results = this._query._sortResults(this.results);
+        this.results = constructQuerySet(this._query._sortResults(this.results), this.model);
     },
     _constructNotificationName: function () {
         return this.model.collectionName + ':' + this.model.name;
     },
     terminate: function () {
-        events.removeListener(this._constructNotificationName(), this.handler);
+        if (this.handler) {
+            events.removeListener(this._constructNotificationName(), this.handler);
+        }
         this.results = null;
         this.handler = null;
     },

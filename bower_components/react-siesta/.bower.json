@@ -1,7 +1,7 @@
 {
   "name": "react-siesta",
   "main": "index.jsx",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "homepage": "https://github.com/mtford90/react-siesta",
   "authors": [
     "Michael Ford <mtford@gmail.com>"
@@ -27,14 +27,14 @@
   "devDependencies": {
     "siesta": "~0.1.0"
   },
-  "_release": "0.1.0",
+  "_release": "0.2.1",
   "_resolution": {
     "type": "version",
-    "tag": "0.1.0",
-    "commit": "02ec6dc15459abf5d1906c6e9432187224dcc31a"
+    "tag": "0.2.1",
+    "commit": "2f53da5706a93c4493f384211f4dfed35891f250"
   },
   "_source": "git://github.com/mtford90/react-siesta.git",
-  "_target": "~0.1.0",
+  "_target": "~0.2.1",
   "_originalSource": "react-siesta",
   "_direct": true
 }

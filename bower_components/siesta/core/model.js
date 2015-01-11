@@ -34,7 +34,7 @@ var Logger = log.loggerWithName('Model');
  */
 function Model(opts) {
     var self = this;
-    this._opts = opts;
+    this._opts = opts ? _.extend({}, opts) : {};
 
     util.extendFromOpts(this, opts, {
         methods: {},
@@ -64,7 +64,6 @@ function Model(opts) {
         _reverseRelationshipsInstalled: false,
         children: []
     });
-
 
     Object.defineProperties(this, {
         _relationshipNames: {
@@ -120,6 +119,7 @@ function Model(opts) {
             enumerable: true
         }
     });
+
 
 }
 
@@ -188,14 +188,21 @@ _.extend(Model.prototype, {
                                 relationship.type == RelationshipType.ManyToMany) {
                                 var modelName = relationship.model;
                                 delete relationship.model;
-                                if (Logger.debug.isEnabled)
-                                    Logger.debug('reverseModelName', modelName);
-                                if (!self.collection) throw new InternalSiestaError('Model must have collection');
-                                var collection = self.collection;
-                                if (!collection) {
-                                    throw new InternalSiestaError('Collection ' + self.collectionName + ' not registered');
+                                var reverseModel;
+                                if (modelName instanceof Model) {
+                                    reverseModel = modelName;
                                 }
-                                var reverseModel = collection[modelName];
+                                else {
+                                    if (Logger.debug.isEnabled)
+                                        Logger.debug('reverseModelName', modelName);
+                                    if (!self.collection) throw new InternalSiestaError('Model must have collection');
+                                    var collection = self.collection;
+                                    if (!collection) {
+                                        throw new InternalSiestaError('Collection ' + self.collectionName + ' not registered');
+                                    }
+                                    reverseModel = collection[modelName];
+                                }
+
                                 if (!reverseModel) {
                                     var arr = modelName.split('.');
                                     if (arr.length == 2) {
@@ -254,7 +261,7 @@ _.extend(Model.prototype, {
     },
     ensureSingletons: function (callback) {
         if (this.singleton) {
-            this.one({_ignoreInstalled: true}).execute(function (err, obj) {
+            this.one({__ignoreInstalled: true}, function (err, obj) {
                 if (err) {
                     callback(err);
                 }
@@ -296,8 +303,12 @@ _.extend(Model.prototype, {
         }
         else callback();
     },
-    query: function (query) {
-        return new Query(this, query || {});
+    _query: function (query) {
+        var query = new Query(this, query || {});
+        return query;
+    },
+    query: function (query, callback) {
+        return (this._query(query)).execute(callback);
     },
     reactiveQuery: function (query) {
         return new ReactiveQuery(new Query(this, query || {}));
@@ -305,10 +316,15 @@ _.extend(Model.prototype, {
     arrangedReactiveQuery: function (query) {
         return new ArrangedReactiveQuery(new Query(this, query || {}));
     },
-    one: function (opts) {
-        var query = this.query(opts);
+    one: function (opts, cb) {
+        opts = opts || {};
+        if (typeof opts == 'function') {
+            cb = opts;
+            opts = {};
+        }
+        var query = this._query(opts);
         // Override the usual execute method, inserting a check that no more one instances returned.
-        query.execute = function (cb) {
+        return (function (cb) {
             var deferred = util.defer(cb);
             cb = deferred.finish.bind(deferred);
             this._executeInMemory(function (err, res) {
@@ -319,11 +335,17 @@ _.extend(Model.prototype, {
                 }
             });
             return deferred.promise;
-        }.bind(query);
-        return query;
+        }).call(query, cb)
     },
-    all: function () {
-        return new Query(this, {});
+    all: function (q, cb) {
+        if (typeof q == 'function') {
+            cb = q;
+            q = {};
+        }
+        q = q || {};
+        var query = {};
+        if (q.__order) query.__order = q.__order;
+        return (new Query(this, query)).execute(cb);
     },
     install: function (callback) {
         if (Logger.info.isEnabled) Logger.info('Installing mapping ' + this.name);
@@ -426,7 +448,7 @@ _.extend(Model.prototype, {
             var values = {};
             newModel.__values = values;
             var defaults = _.reduce(this.attributes, function (m, a) {
-                if (a.default) {
+                if (a.default !== undefined) {
                     m[a.name] = a.default;
                 }
                 return m;
@@ -581,11 +603,17 @@ _.extend(Model.prototype, {
         } else {
             opts = name;
         }
-        opts.attributes
-            = Array.prototype.concat.call(opts.attributes || [], this._opts.attributes);
-        opts.relationships = _.extend(opts.relationships || {}, this._opts.relationships);
-        var collection = this.collection;
-        var model = collection.model(opts.name, opts);
+        _.extend(opts, {
+            attributes: Array.prototype.concat.call(opts.attributes || [], this._opts.attributes),
+            relationships: _.extend(opts.relationships || {}, this._opts.relationships),
+            methods: _.extend(_.extend({}, this._opts.methods) || {}, opts.methods),
+            statics: _.extend(_.extend({}, this._opts.statics) || {}, opts.statics),
+            properties: _.extend(_.extend({}, this._opts.properties) || {}, opts.properties),
+            id: opts.id || this._opts.id,
+            init: opts.init || this._opts.init,
+            remove: opts.remove || this._opts.remove
+        });
+        var model = this.collection.model(opts.name, opts);
         model.parent = this;
         this.children.push(model);
         return model;

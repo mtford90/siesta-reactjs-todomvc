@@ -1,7 +1,7 @@
 {
   "name": "react-siesta",
   "main": "index.jsx",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "homepage": "https://github.com/mtford90/react-siesta",
   "authors": [
     "Michael Ford <mtford@gmail.com>"

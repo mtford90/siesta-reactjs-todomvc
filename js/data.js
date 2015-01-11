@@ -22,8 +22,7 @@ var app = app || {};
             ],
             statics: {
                 toggleAll: function (checked) {
-                    // TODO: Get rid of execute
-                    this.all().execute().then(function (ts) {
+                    this.all().then(function (ts) {
                          ts.forEach(function (t) {
                              t.completed = checked;
                          })

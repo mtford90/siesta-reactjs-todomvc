@@ -7,7 +7,10 @@
 var ReactiveQuery = require('./reactiveQuery'),
     log = require('./log'),
     util = require('./util'),
-    InternalSiestaError = require('./error').InternalSiestaError,
+    error = require('./error'),
+    InternalSiestaError = error.InternalSiestaError,
+    constructQuerySet = require('./querySet'),
+    constructError = error.errorFactory(error.Components.ArrangedReactiveQuery),
     _ = util._;
 
 
@@ -75,56 +78,29 @@ _.extend(ArrangedReactiveQuery.prototype, {
             res[this.indexAttribute] = n;
         }
 
-        this.results = newResults;
-
-
+        this.results = constructQuerySet(newResults, this.model);
     },
     init: function (cb) {
         var deferred = util.defer(cb);
         ReactiveQuery.prototype.init.call(this, function (err) {
             if (!err) {
                 if (!this.model.hasAttributeNamed(this.indexAttribute)) {
-                    err = 'Model "' + this.model.name + '" does not have an attribute named "' + this.indexAttribute + '"';
+                    err = constructError('Model "' + this.model.name + '" does not have an attribute named "' + this.indexAttribute + '"')
                 }
                 else {
                     this._mergeIndexes();
                     this._query.clearOrdering();
-                }
+                } 
             }
-            deferred.finish(err);
+            deferred.finish(err, err ? null : this.results);
         }.bind(this));
-        return deferred.promise;
-    },
-    orderBy: function (field, cb) {
-        var deferred = util.defer(cb);
-        ReactiveQuery.prototype.orderBy.call(this, field, function (err) {
-            if (!err) {
-                // We do not want to reorder on every update. Ordering is handled by the user instead with
-                // positional reactive queries.
-                if (this.initialised) {
-                    this._query.clearOrdering();
-                    this._refreshIndexes();
-                }
-            }
-            deferred.finish(err);
-        }.bind(this));
-        return deferred.promise;
-    },
-    clearOrdering: function (cb) {
-        this._query.clearOrdering();
-        var deferred = util.defer(cb);
-        deferred.resolve();
         return deferred.promise;
     },
     _handleNotif: function (n) {
-        // We don't want to keep executing the query each time index modelEvents. We're changing
-        // the index ourselves.
+        // We don't want to keep executing the query each time the index event fires as we're changing the index ourselves
         if (n.field != this.indexAttribute) {
             ReactiveQuery.prototype._handleNotif.call(this, n);
             this._refreshIndexes();
-        }
-        else {
-            this.emit('change', this.results);
         }
     },
     validateIndex: function (idx) {
@@ -159,6 +135,7 @@ _.extend(ArrangedReactiveQuery.prototype, {
     move: function (from, to) {
         this.validateIndex(from);
         this.validateIndex(to);
+        var results = this.results.mutableCopy();
         (function (oldIndex, newIndex) {
             if (newIndex >= this.length) {
                 var k = newIndex - this.length;
@@ -167,7 +144,8 @@ _.extend(ArrangedReactiveQuery.prototype, {
                 }
             }
             this.splice(newIndex, 0, this.splice(oldIndex, 1)[0]);
-        }).call(this.results, from, to);
+        }).call(results, from, to);
+        this.results = results.asModelQuerySet(this.model);
         this._refreshIndexes();
     }
 });

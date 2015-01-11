@@ -5,6 +5,9 @@
 var log = require('./log'),
     cache = require('./cache'),
     util = require('./util'),
+    error = require('./error'),
+    constructQuerySet = require('./querySet'),
+    constructError = error.errorFactory(error.Components.Query),
     _ = util._;
 
 var Logger = log.loggerWithName('Query');
@@ -12,16 +15,25 @@ var Logger = log.loggerWithName('Query');
 /**
  * @class [Query description]
  * @param {Model} model
- * @param {Object} opts
+ * @param {Object} query
  */
-function Query(model, opts) {
+function Query(model, query) {
+    var opts = {};
+    for (var prop in query) {
+        if (query.hasOwnProperty(prop)) {
+            if (prop.slice(0, 2) == '__') {
+                opts[prop.slice(2)] = query[prop];
+                delete query[prop];
+            }
+        }
+    }
     _.extend(this, {
         model: model,
-        query: opts,
-        _ignoreInstalled: opts._ignoreInstalled,
-        ordering: null
+        query: query,
+        opts: opts
     });
-    delete opts._ignoreInstalled;
+    opts.order = opts.order || [];
+    if (!util.isArray(opts.order)) opts.order = [opts.order];
 }
 
 _.extend(Query, {
@@ -101,8 +113,9 @@ _.extend(Query.prototype, {
         return s;
     },
     _sortResults: function (res) {
-        if (res && this.ordering) {
-            var fields = _.map(this.ordering, function (ordering) {
+        var order = this.opts.order;
+        if (res && order) {
+            var fields = _.map(order, function (ordering) {
                 var splt = ordering.split('-'),
                     ascending = true,
                     field = null;
@@ -116,6 +129,7 @@ _.extend(Query.prototype, {
                 return {field: field, ascending: ascending};
             }.bind(this));
             var s = this.sortFunc(fields);
+            if (res.immutable) res = res.mutableCopy();
             res.sort(s);
         }
         return res;
@@ -141,36 +155,23 @@ _.extend(Query.prototype, {
                 var obj = cacheByLocalId[k];
                 var matches = self.objectMatchesQuery(obj);
                 if (typeof(matches) == 'string') {
-                    err = matches;
+                    err = constructError(matches);
                     break;
                 } else {
                     if (matches) res.push(obj);
                 }
             }
             res = this._sortResults(res);
-            callback(err, err ? null : res);
+            callback(err, err ? null : constructQuerySet(res, this.model));
         }.bind(this);
-        if (this._ignoreInstalled) _executeInMemory();
+        if (this.opts.ignoreInstalled) _executeInMemory();
         else {
             siesta._afterInstall(_executeInMemory);
         }
 
     },
-    orderBy: function () {
-        this.ordering = [];
-        for (var i = 0; i < arguments.length; i++) {
-            var ordering = arguments[i];
-            if (util.isArray(ordering)) {
-                this.ordering = this.ordering.concat(ordering);
-            }
-            else {
-                this.ordering.push(ordering);
-            }
-        }
-        return this;
-    },
     clearOrdering: function () {
-        this.ordering = null;
+        this.opts.order = null;
     },
     objectMatchesOrQuery: function (obj, orQuery) {
         for (var idx in orQuery) {

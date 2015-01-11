@@ -48,35 +48,10 @@ var app = app || {},
                 '/completed': setState.bind(this, {nowShowing: app.COMPLETED_TODOS})
             });
             router.init('/');
-            // TODO: Get rid of query & execute + use new mixin feature for listening + updating state
-            var handler = function (prop) {
-                return function () {
-                    var stateChange = {};
-                    stateChange[prop] = this[prop].results;
-                    this.setState(stateChange, function () {
-                        console.log('state', this.state);
-                    });
-                }.bind(this)
-            };
-
-            // TODO: pass orderBy to opts
-
-            _.extend(this, {
-                all: app.Todo.reactiveQuery(),
-                completed: app.Todo.reactiveQuery({completed: true}),
-                active: app.Todo.reactiveQuery({completed: false})
-            });
-
-            this.all.orderBy('-index');
-            this.completed.orderBy('-index');
-            this.active.orderBy('-index');
-            this.all.init().then(handler.call(this, 'all'));
-            this.all.listen(handler.call(this, 'all'));
-            this.completed.init().then(handler.call(this, 'completed'));
-            this.completed.listen(handler.call(this, 'completed'));
-            this.active.init().then(handler.call(this, 'active'));
-            this.active.listen(handler.call(this, 'active'));
-
+            var order = '-index';
+            this.listenAndSet(app.Todo.reactiveQuery({__order: order}), 'all');
+            this.listenAndSet(app.Todo.reactiveQuery({completed: true, __order: order}), 'completed');
+            this.listenAndSet(app.Todo.reactiveQuery({completed: false, __order: order}), 'active');
         },
 
         handleNewTodoKeyDown: function (event) {
@@ -118,10 +93,7 @@ var app = app || {},
         },
 
         clearCompleted: function () {
-            // TODO: Queryset.remove()
-            _.extend([], this.state.completed).forEach(function (t) {
-                t.remove();
-            });
+            this.state.completed.remove();
         },
 
         render: function () {
@@ -142,9 +114,6 @@ var app = app || {},
 
             var activeTodoCount = this.state.active.length,
                 completedCount = this.state.completed.length;
-
-            console.log('activeTodoCount', activeTodoCount);
-            console.log('completedCount', completedCount);
 
             if (activeTodoCount || completedCount) {
                 footer =

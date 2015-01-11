@@ -11,6 +11,8 @@ var log = require('./log'),
     events = require('./events'),
     util = require('./util'),
     _ = util._,
+    error = require('./error'),
+    constructError = error.errorFactory(error.Components.Collection),
     cache = require('./cache');
 
 var UNSAFE_METHODS = ['PUT', 'PATCH', 'POST', 'DELETE'],
@@ -21,6 +23,7 @@ var UNSAFE_METHODS = ['PUT', 'PATCH', 'POST', 'DELETE'],
  * like to model.
  *
  * @param name
+ * @param opts
  * @constructor
  *
  *
@@ -33,19 +36,22 @@ var UNSAFE_METHODS = ['PUT', 'PATCH', 'POST', 'DELETE'],
  * });
  * ```
  */
-function Collection(name) {
+function Collection(name, opts) {
     var self = this;
     if (!name) throw new Error('Collection must have a name');
+
+    util.extendFromOpts(this, opts || {}, {
+        /**
+         * The URL of the API e.g. http://api.github.com
+         * @type {string}
+         */
+        baseURL: ''
+    });
 
     _.extend(this, {
         name: name,
         _rawModels: {},
         _models: {},
-        /**
-         * The URL of the API e.g. http://api.github.com
-         * @type {string}
-         */
-        baseURL: '',
         /**
          * Set to true if installation has succeeded. You cannot use the collectio
          * @type {boolean}
@@ -141,6 +147,7 @@ _.extend(Collection.prototype, {
      * @class Collection
      */
     _finaliseInstallation: function (err, callback) {
+        if (err) err = constructError('Errors were encountered whilst setting up the collection', {errors: err});
         if (!err) {
             this.installed = true;
             var index = require('./index');

@@ -73,7 +73,6 @@ var app = app || {};
         },
 
         render: function () {
-            console.log('rendering todo');
             return (
                 <li className={React.addons.classSet({
                     completed: this.props.todo.completed,
