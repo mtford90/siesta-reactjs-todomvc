@@ -1,6 +1,6 @@
 {
   "name": "siesta",
-  "version": "0.1.3",
+  "version": "0.1.16",
   "dependencies": {},
   "devDependencies": {
     "async": "~0.9.0",
@@ -25,14 +25,13 @@
     "package.json"
   ],
   "homepage": "https://github.com/mtford90/siesta",
-  "_release": "0.1.3",
+  "_release": "0.1.16",
   "_resolution": {
     "type": "version",
-    "tag": "0.1.3",
-    "commit": "907f49c559350dbfd46796f4c9f6eff6530d4e73"
+    "tag": "0.1.16",
+    "commit": "071f7ed5994ca62eba9b66c0cb71d8c49dfe24fb"
   },
   "_source": "git://github.com/mtford90/siesta.git",
-  "_target": "~0.1.3",
-  "_originalSource": "siesta",
-  "_direct": true
+  "_target": "~0.1.0",
+  "_originalSource": "siesta"
 }

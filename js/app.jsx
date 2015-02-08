@@ -64,7 +64,7 @@ var app = app || {},
             var title = this.refs.newField.getDOMNode().value.trim();
 
             if (title) {
-                app.Todo.map({title: title, completed: false, index: this.state.all.length});
+                app.Todo.graph({title: title, completed: false, index: this.state.all.length});
                 this.refs.newField.getDOMNode().value = '';
             }
         },

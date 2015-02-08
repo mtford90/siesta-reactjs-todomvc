@@ -1,5 +1,5 @@
 var util = require('./util'),
-    SiestaUserError = require('./error').SiestaUserError,
+    error = require('./error'),
     ModelInstance = require('./ModelInstance'),
     _ = require('./util')._;
 
@@ -49,7 +49,7 @@ function defineAttribute(arr, prop) {
             },
             set: function (v) {
                 if (util.isArray(v)) {
-                    if (this.length != v.length) throw new SiestaUserError({message: 'Must be same length'});
+                    if (this.length != v.length) throw error({message: 'Must be same length'});
                     for (var i = 0; i < v.length; i++) {
                         this[i][prop] = v[i];
                     }
@@ -83,7 +83,7 @@ function defineMethod(arr, prop) {
                 });
             var arePromises = false;
             if (res.length) arePromises = isPromise(res[0]);
-            return arePromises ? window.Q.all(res) : querySet(res);
+            return arePromises ? siesta.q.all(res) : querySet(res);
         };
     }
 }
